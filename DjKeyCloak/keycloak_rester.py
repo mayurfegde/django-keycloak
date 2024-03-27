@@ -6,6 +6,9 @@ import requests
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.conf import settings
+
+KEYCLOAK_URL = getattr(settings, "KEYCLOAK_URL", 'http://localhost:8080')
 
 User = get_user_model()
 
@@ -31,7 +34,8 @@ def delete(**kwargs):
     return requests.delete(**kwargs)
 
 class KeycloakRester(object):
-    base_url = "http://192.168.1.5:8080"
+
+    base_url = KEYCLOAK_URL
 
     def __init__(self, realm_name=None, access_token=None):
         self.realm_name = realm_name
