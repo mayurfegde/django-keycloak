@@ -4,7 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 from .keycloak_rester import KeycloakRester
 
 missing = []
-for att in ['ssssssssssssssssssssssss', 'REALM_NAME', 'CLIENT']:
+for att in ['KEYCLOAK_SERVER', 'REALM_NAME', 'CLIENT']:
     try:
         getattr(settings, att)
     except AttributeError:
