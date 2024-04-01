@@ -3,6 +3,8 @@ import json
 
 import requests
 
+from django.conf import settings
+
 def parse_error_message(api_response):
     try:
         return api_response.json()['errorMessage']
@@ -38,8 +40,8 @@ def delete(**kwargs):
 
 class Base:
     def __init__(self, realm_name=None, access_token=None):
-        self.base_url = "http://192.168.1.2:8080"
-        self.realm_name = realm_name
+        self.base_url = settings.KEYCLOAK_SERVER
+        self.realm_name = settings.REALM_NAME
         self.access_token = access_token
 
     def get_master_access_token(self):
@@ -594,6 +596,12 @@ class KeyCloakUserManagement(Base):
             ))
         return response
 
+    def decode_token(self, token):
+        response = getAPI(
+            url="{0}/realms/{1}/protocol/openid-connect/userinfo".format(self.base_url, self.realm_name),
+            headers={"Authorization": token}    # This token has prefix Bearer
+        )
+        return self.get_users(username=response['preferred_username'], permissions=True)
 
 
 class KeycloakRester(KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAuthSettings, KeyCloakClientManagement):
