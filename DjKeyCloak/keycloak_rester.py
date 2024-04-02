@@ -7,7 +7,7 @@ from django.conf import settings
 
 def parse_error_message(api_response):
     if api_response.status_code == 401:
-        return "Unauthorized access"
+        return "Invalid or expired token"
     try:
         return api_response.json()['errorMessage']
     except KeyError:
