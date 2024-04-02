@@ -2,7 +2,6 @@ import base64
 import json
 
 import requests
-
 from django.conf import settings
 
 def parse_error_message(api_response):
@@ -24,19 +23,13 @@ def getAPI(**kwargs):
         raise Exception(parse_error_message(response))
 
 def post(**kwargs):
-    for x, v in kwargs.items():
-        print(x, v)
     return requests.post(**kwargs)
 
 
 def put(**kwargs):
-    for x, v in kwargs.items():
-        print(x, v)
     return requests.put(**kwargs)
 
 def delete(**kwargs):
-    for x, v in kwargs.items():
-        print(x, v)
     return requests.delete(**kwargs)
 
 
@@ -110,8 +103,7 @@ class KeyCloakRealmManagement(Base):
                 realm=realm_name,
                 enabled=is_active,
             )),
-            headers={"Authorization": 'Bearer %s' % self.get_master_access_token(),
-                     'Content-Type': 'application/json'}
+            headers={"Authorization": self.access_token, 'Content-Type': 'application/json'}
         )
         if response.status_code != 204:
             raise Exception(
@@ -236,7 +228,6 @@ class KeyCloakClientManagement(Base):
 
     def update_client_application(self, client_id, **payload):
         logoutUrl = payload.pop('logoutUrl')
-        print("payload" , payload)
         response = put(
             url="{0}/admin/realms/{1}/clients/{2}".format(self.base_url, self.realm_name, client_id),
             data=json.dumps(dict(
@@ -258,7 +249,6 @@ class KeyCloakClientManagement(Base):
             url="{0}/admin/realms/{1}/clients/{2}".format(self.base_url, self.realm_name, client_id),
             headers={"Authorization": self.access_token}
         )
-        print(response.status_code)
 
 class KeyCloakAuthSettings(Base):
     def set_authentication(self, allow_user_registration=False, verify_user_email=False, allow_forget_email=False,
@@ -299,7 +289,7 @@ class KeyCloakAuthSettings(Base):
                     "starttls": True,
                     "host": payload['host'], "port": payload['port'],
                 })),
-            headers={"Authorization": 'Bearer %s' % self.get_master_access_token(),
+            headers={"Authorization": self.access_token,
                      'Content-Type': 'application/json'}
         )
         if response.status_code != 204:
@@ -330,7 +320,7 @@ class KeyCloakAuthSettings(Base):
                     "clientAuthMethod": "client_secret_post",
                 }
             }),
-            headers={"Authorization": 'Bearer %s' % self.get_master_access_token(),
+            headers={"Authorization": self.access_token,
                      'Content-Type': 'application/json'},
         )
 
@@ -383,7 +373,6 @@ class KeyCloakUserManagement(Base):
     def get_users(self, username=None, permissions=True):
         url = "{0}/admin/realms/{1}/users".format(self.base_url, self.realm_name)
         if username: url = f'{url}?username={username}'
-
         response = get(url=url, headers={"Authorization": self.access_token})
         if response.status_code == 200:
             user_details = list()
@@ -432,7 +421,7 @@ class KeyCloakUserManagement(Base):
             data=json.dumps(
                 {"type": "password", "value": "*Nimbus", "temporary": True}
             ),
-            headers={"Authorization": 'Bearer %s' % self.get_master_access_token(),
+            headers={"Authorization": self.access_token,
                      'Content-Type': 'application/json'},
         )
         if response.status_code != 204:
@@ -442,7 +431,6 @@ class KeyCloakUserManagement(Base):
         return len(self.get_users())
 
     def create_group(self, group_name, attributes={}):
-        print("attributes", attributes)
         response = post(
             url="{0}/admin/realms/{1}/groups".format(self.base_url, self.realm_name),
             data=json.dumps({"name": group_name, "attributes": attributes}),
@@ -452,7 +440,6 @@ class KeyCloakUserManagement(Base):
         if response.status_code == 201:
             groups = self.get_all_groups(self.realm_name)
             groups = next(filter(lambda x: x['name'] == group_name, groups), None)
-            print("groups", groups)
             groups['permissions'] = self.format_attributes(attributes=self.get_all_groups(group_id=groups['id'])['permissions'])
 
             if groups['name'] == 'ADMIN':
@@ -530,11 +517,13 @@ class KeyCloakUserManagement(Base):
         user_permissions = {}
 
         for group in user_groups:
-            attributes = self.get_all_groups(group_id=group['id']).get('permissions')
-            user_permissions.update(attributes)
+            attributes = self.get_all_groups(group_id=group['id']).get('attributes')
+            if attributes:
+                for key, value in attributes.items():
+                    attributes[key] = attributes[key][0]
+                user_permissions.update(attributes)
 
         return user_permissions
-
 
     def format_attributes(self, attributes):
         if attributes:
@@ -567,10 +556,8 @@ class KeyCloakUserManagement(Base):
                self.base_url, self.realm_name, user_id, client_role_id,),
             headers={"Authorization": self.access_token}
         )
-        print("response", response.status_code)
 
     def assign_realm_role_to_group(self, group_id, client_role_details):
-        print("Assigning Role", client_role_details)
         response = post(
             url="{0}/admin/realms/{1}/groups/{2}/role-mappings/clients/{3}".format(
                self.base_url, self.realm_name, group_id, client_role_details['clientId']),
@@ -601,7 +588,8 @@ class KeyCloakUserManagement(Base):
             url="{0}/realms/{1}/protocol/openid-connect/userinfo".format(self.base_url, self.realm_name),
             headers={"Authorization": self.access_token}    # This token has prefix Bearer
         )
-        return self.get_users(username=response['preferred_username'], permissions=True)
+        return self.get_users(username=response['preferred_username'], permissions=True)[0]
+
 
 
 class KeycloakRester(KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAuthSettings, KeyCloakClientManagement):
@@ -643,7 +631,6 @@ class KeycloakRester(KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAu
         response = get(
             url="{0}/realms/{1}/protocol/openid-connect/userinfo".format(self.base_url, realm_name),
             headers={"Authorization": access_token})
-        print("response", response.status_code)
         if response.status_code != 200:
             return None
         return response.json()
@@ -662,7 +649,6 @@ class KeycloakRester(KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAu
         decoded_token = base64.b64decode(token_parts[1] + '==').decode('utf-8')
         token_json = json.loads(decoded_token)
         user_id = token_json['sub']
-        print("user_id", user_id)
         return self.get_user_based_on_user_id(realm_name=realm_name, user_id=user_id)
 
     def assign_groups_to_user(self, user_id, group_ids):
@@ -677,12 +663,6 @@ class KeycloakRester(KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAu
             base_url=self.base_url, realm_name=self.realm_name, user_id=user_id, group_id=group_id
         )
         response = delete(url=url, headers={"Authorization": self.access_token})
-        print("response", response.status_code)
-
-
 
     def get_group_attributes(self, group_id):
         pass
-
-
-
