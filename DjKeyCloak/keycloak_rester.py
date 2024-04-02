@@ -370,9 +370,11 @@ class KeyCloakUserManagement(Base):
 
         return True, "Created Successfully"
 
-    def get_users(self, username=None, permissions=True):
+    def get_users(self, username=None, permissions=True, user_id=None):
         url = "{0}/admin/realms/{1}/users".format(self.base_url, self.realm_name)
-        if username: url = f'{url}?username={username}'
+        if username: url = f'{url}?search={username}'
+        if user_id: url = f'{url}/{user_id}'
+
         response = get(url=url, headers={"Authorization": self.access_token})
         if response.status_code == 200:
             user_details = list()
