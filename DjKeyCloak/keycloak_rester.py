@@ -13,8 +13,6 @@ def parse_error_message(api_response):
         return api_response.json().get('error')
 
 def get(**kwargs):
-    print("GET API--")
-    print(kwargs)
     return requests.get(**kwargs)
 
 def getAPI(**kwargs):
@@ -38,7 +36,7 @@ def delete(**kwargs):
 class Base:
     def __init__(self, realm_name=None, access_token=None):
         self.base_url = settings.KEYCLOAK_SERVER
-        self.realm_name = settings.REALM_NAME
+        self.realm_name = realm_name
         self.access_token = access_token
 
     def get_master_access_token(self):
