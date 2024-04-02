@@ -378,7 +378,8 @@ class KeyCloakUserManagement(Base):
         response = get(url=url, headers={"Authorization": self.access_token})
         if response.status_code == 200:
             user_details = list()
-            for user_info in response.json():
+            response_data = [response.json()] if isinstance(response.json(), dict) else response.json()
+            for user_info in response_data:
                 data_dict = dict(
                     id=user_info['id'],
                     username=user_info['username'],
