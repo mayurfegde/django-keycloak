@@ -542,7 +542,7 @@ class KeyCloakUserManagement(Base):
                 if value is None:
                     attributes[key] = None
                 else:
-                    attributes[key] = value[0]
+                    attributes[key] = value
         return attributes
 
     def users_based_on_group(self, group_id):
