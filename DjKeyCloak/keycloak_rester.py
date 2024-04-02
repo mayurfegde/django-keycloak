@@ -530,13 +530,11 @@ class KeyCloakUserManagement(Base):
         user_permissions = {}
 
         for group in user_groups:
-            attributes = self.get_all_groups(group_id=group['id']).get('attributes')
-            if attributes:
-                for key, value in attributes.items():
-                    attributes[key] = attributes[key][0]
-                user_permissions.update(attributes)
+            attributes = self.get_all_groups(group_id=group['id']).get('permissions')
+            user_permissions.update(self.format_attributes(attributes))
 
         return user_permissions
+
 
     def format_attributes(self, attributes):
         if attributes:
