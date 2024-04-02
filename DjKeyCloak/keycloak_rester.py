@@ -596,10 +596,10 @@ class KeyCloakUserManagement(Base):
             ))
         return response
 
-    def decode_token(self, token):
+    def decode_token(self):
         response = getAPI(
             url="{0}/realms/{1}/protocol/openid-connect/userinfo".format(self.base_url, self.realm_name),
-            headers={"Authorization": token}    # This token has prefix Bearer
+            headers={"Authorization": self.token}    # This token has prefix Bearer
         )
         return self.get_users(username=response['preferred_username'], permissions=True)
 
