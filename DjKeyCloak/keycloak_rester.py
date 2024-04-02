@@ -13,6 +13,8 @@ def parse_error_message(api_response):
         return api_response.json().get('error')
 
 def get(**kwargs):
+    print("GET API--")
+    print(kwargs)
     return requests.get(**kwargs)
 
 def getAPI(**kwargs):
