@@ -531,7 +531,7 @@ class KeyCloakUserManagement(Base):
 
         for group in user_groups:
             attributes = self.get_all_groups(group_id=group['id']).get('permissions')
-            user_permissions.update(self.format_attributes(attributes))
+            user_permissions.update(attributes)
 
         return user_permissions
 
@@ -542,7 +542,7 @@ class KeyCloakUserManagement(Base):
                 if value is None:
                     attributes[key] = None
                 else:
-                    attributes[key] = value
+                    attributes[key] = value[0]
         return attributes
 
     def users_based_on_group(self, group_id):
