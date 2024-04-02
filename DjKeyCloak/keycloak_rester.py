@@ -591,7 +591,7 @@ class KeyCloakUserManagement(Base):
             url="{0}/realms/{1}/protocol/openid-connect/userinfo".format(self.base_url, self.realm_name),
             headers={"Authorization": self.access_token}    # This token has prefix Bearer
         )
-        return self.get_users(user_id=response['sub'], permissions=True)
+        return self.get_users(user_id=response['sub'], permissions=True)[0]
 
 
 
