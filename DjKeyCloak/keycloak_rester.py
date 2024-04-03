@@ -520,11 +520,8 @@ class KeyCloakUserManagement(Base):
         user_permissions = {}
 
         for group in user_groups:
-            attributes = self.get_all_groups(group_id=group['id']).get('attributes')
-            if attributes:
-                for key, value in attributes.items():
-                    attributes[key] = attributes[key][0]
-                user_permissions.update(attributes)
+            attributes = self.get_all_groups(group_id=group['id']).get('permissions')
+            user_permissions.update(attributes)
 
         return user_permissions
 
@@ -598,37 +595,10 @@ class KeyCloakUserManagement(Base):
 class KeycloakRester(KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAuthSettings, KeyCloakClientManagement):
 
     def add_user_into_group(self, realm_name, username, group_name, master_token=None):
-        master_token = master_token or self.get_master_access_token()
-        groups = self.get_all_groups(realm_name, search=group_name, exact=True)
-        group = next(filter(lambda x: x['name'] == group_name, groups), None)
-        users = self.get_users(realm_name, username)
-        group_id = group['id']
-
-        if group and users:
-            user_instance = User.objects.get(username=username)
-            for user in users:
-                user_id = user['id']
-                put(
-                    url="{0}/admin/realms/{1}/users/{2}/groups/{3}".format(self.base_url, realm_name, user_id,
-                                                                           group_id),
-                    data=json.dumps({"name": group_name, "path": "/new_group"}),
-                    headers={"Authorization": 'Bearer %s' % master_token,
-                             'Content-Type': 'application/json'}
-                )
-
-                user_instance.groups.add(Group.objects.get_or_create(name=group_name)[0])
+        pass
 
     def remove_user_from_group(self, realm_name, username, group_name):
-        # master_token = self.get_master_access_token()
-        groups = self.get_all_groups(realm_name, search=group_name, exact=True)
-        group = next(filter(lambda x: x['name'] == group_name, groups), None)
-        users = self.get_users(realm_name, username)
-        group_id = group['id']
-
-        if group and users:
-            user_instance = User.objects.get(username=username)
-            for user in users:
-                pass
+        pass
 
     def get_user_info(self, realm_name, access_token):
         response = get(
@@ -666,6 +636,3 @@ class KeycloakRester(KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAu
             base_url=self.base_url, realm_name=self.realm_name, user_id=user_id, group_id=group_id
         )
         response = delete(url=url, headers={"Authorization": self.access_token})
-
-    def get_group_attributes(self, group_id):
-        pass
