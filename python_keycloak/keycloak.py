@@ -4,7 +4,7 @@ from .views_realm import KeyCloakRealmManagement, KeyCloakAuthSettings, KeyCloak
 from .views_user import KeyCloakUserManagement
 
 
-class KeycloakRester(Base, KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAuthSettings, KeyCloakClientManagement):
+class KeycloakRester(KeyCloakRealmManagement, KeyCloakAuthSettings, KeyCloakClientManagement, KeyCloakUserManagement):
 
     def get_user_info(self, realm_name, access_token):
         response = fetch_data(
