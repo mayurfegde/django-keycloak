@@ -1,4 +1,4 @@
-from .keycloak_compose import base64, json, Base, fetch_data
+from .compose import base64, json, Base, fetch_data
 
 from .views_realm import KeyCloakRealmManagement, KeyCloakAuthSettings, KeyCloakClientManagement
 from .views_user import KeyCloakUserManagement

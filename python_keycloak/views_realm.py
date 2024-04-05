@@ -1,4 +1,4 @@
-from .keycloak_compose import Base, json, format_attributes,\
+from .compose import Base, json, format_attributes,\
     fetch_data, create_data, update_data, delete_data
 
 
