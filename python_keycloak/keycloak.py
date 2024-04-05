@@ -22,6 +22,7 @@ def delete(**kwargs):
 
 
 class Base(KeyCloakUrlLibrary):
+
     def __init__(self, realm_name=None, access_token=None):
         self.base_url = settings.KEYCLOAK_SERVER
         self.realm_name = realm_name
@@ -32,12 +33,13 @@ class Base(KeyCloakUrlLibrary):
         password = "admin"
 
         response = post(
-            url="{0}/realms/master/protocol/openid-connect/token".format(self.base_url),
+            url=self.URL_CREATE_MASTER_LOGIN,
             data='grant_type=password&client_id=admin-cli&username=%s&password=%s' % (username, password),
             headers={'Content-Type': 'application/x-www-form-urlencoded'}
         )
         self.access_token = response.json()['access_token'] if response.status_code == 200 else None
         return self.access_token
+
 
 class KeyCloakRealmManagement(Base):
     def create_realm(self, realm_name, **kwargs):
@@ -76,10 +78,7 @@ class KeyCloakRealmManagement(Base):
             url=self.URL_GET_REALM_BY_NAME.format(realm_name=self.realm_name),
             headers={"Authorization": self.access_token}
         )
-        print("-- response --", response)
-        return dict(
-            id=response['id']
-        )
+        return dict(id=response['id'])
 
     def delete_realm(self):
         """ Delete the realms"""
@@ -295,24 +294,28 @@ class KeyCloakUserManagement(Base):
         return user_details
 
     def update_user_details(self, user_id, payload):
-        response = update_data(
+        update_data(
             url=self.URL_UPDATE_USER.format(realm_name=self.realm_name, user_id=user_id),
             data=json.dumps(payload),
             headers={"Authorization": self.access_token}
         )
+
     def delete_user(self, user_id):
         delete_data(
             url=self.URL_UPDATE_USER.format(realm_name=self.realm_name, user_id=user_id),
             headers={"Authorization": self.access_token}
         )
-    def reset_user_password(self, user_id):
+
+    def reset_user_password(self, user_id, default_password="*Nimbus", temporary=True):
         update_data(
             url=self.URL_USER_RESET_PASSWORD.format(realm_name=self.realm_name, user_id=user_id),
-            data=json.dumps({"type": "password", "value": "*Nimbus", "temporary": True}),
+            data=json.dumps({"type": "password", "value": default_password, "temporary": temporary}),
             headers={"Authorization": self.access_token, 'Content-Type': 'application/json'},
         )
+
     def get_total_users(self):
         return len(self.get_users())
+    
     def create_group(self, group_name, attributes={}):
         create_data(
             url=self.URL_CREATE_GROUP.format(realm_name=self.realm_name),
@@ -346,6 +349,7 @@ class KeyCloakUserManagement(Base):
                 data['users'] = self.users_based_on_group(group_id=group_id)
             return data
         return [dict(id=j['id'], name=j['name']) for j in response]
+    
     def update_group_details(self, new_group_name, group_id, attributes={}):
         update_data(
             url=self.URL_UPDATE_GROUP.format(realm_name=self.realm_name, group_id=group_id),
@@ -355,6 +359,7 @@ class KeyCloakUserManagement(Base):
         )
         group_info = self.get_all_groups(group_id=group_id)
         return group_info
+    
     def delete_group(self, group_id):
         delete_data(
             url=self.URL_DELETE_GROUP.format(realm_name=self.realm_name, group_id=group_id),
@@ -362,10 +367,10 @@ class KeyCloakUserManagement(Base):
         )
 
     def assign_user_to_group(self, user_id, group_id):
-        url = self.URL_ADD_USER_TO_GROUP.format(
-            realm_name=self.realm_name, user_id=user_id, group_id=group_id
+        update_data(
+            url = self.URL_ADD_USER_TO_GROUP.format(realm_name=self.realm_name, user_id=user_id, group_id=group_id),
+            headers={"Authorization": self.access_token}
         )
-        update_data(url=url, headers={"Authorization": self.access_token})
 
     def get_groups_for_user(self, user_id):
         response = fetch_data(
@@ -384,8 +389,8 @@ class KeyCloakUserManagement(Base):
 
     def remove_user_from_groups(self, user_id, group_ids):
         for group_id in group_ids:
-            url = '{base_url}/admin/realms/{realm_name}/users/{user_id}/groups/{group_id}'.format(
-            base_url=self.base_url, realm_name=self.realm_name, user_id=user_id, group_id=group_id
+            url = self.URL_REMOVE_USER_FROM_GROUP.format(
+            realm_name=self.realm_name, user_id=user_id, group_id=group_id
         )
         delete_data(url=url, headers={"Authorization": self.access_token})
 
@@ -438,28 +443,25 @@ class KeyCloakUserManagement(Base):
 
     def decode_token(self):
         response = fetch_data(
-            url=KeyCloakUrlLibrary.URL_USER_INFO.format(realm_name=self.realm_name),
+            url=self.URL_USER_INFO.format(realm_name=self.realm_name),
             headers={"Authorization": self.access_token}    # This token has prefix Bearer
         )
         return self.get_users(user_id=response['sub'])[0]
 
-class KeycloakRester(KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAuthSettings, KeyCloakClientManagement):
+
+class KeycloakRester(Base, KeyCloakUserManagement, KeyCloakRealmManagement, KeyCloakAuthSettings, KeyCloakClientManagement):
     def get_user_info(self, realm_name, access_token):
-        response = get(
-            url="{0}/realms/{1}/protocol/openid-connect/userinfo".format(self.base_url, realm_name),
+        response = fetch_data(
+            url=self.URL_USER_INFO.format(realm_name=self.realm_name),
             headers={"Authorization": access_token})
-        if response.status_code != 200:
-            return None
-        return response.json()
+        return response
 
     def get_user_based_on_user_id(self, realm_name, user_id):
         master_token = self.get_master_access_token()
-        response = get(
-            url="{0}/admin/realms/{1}/users/{2}".format(self.base_url, realm_name, user_id),
+        response = fetch_data(
+            url=self.URL_GET_USERS_BY_ID.format(realm_name=self.realm_name, user_id=user_id),
             headers={"Authorization": 'Bearer %s' % master_token})
-        if response.status_code != 200:
-            return None
-        return response.json()
+        return response
 
     def get_user_based_on_token(self, realm_name, access_token):
         token_parts = access_token.split('.')
