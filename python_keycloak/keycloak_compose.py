@@ -104,9 +104,9 @@ def parse_error_message(api_response):
 def fetch_data(**kwargs):
     try:
         kwargs = add_server_url(**kwargs)
-        print("kwargs", kwargs)
+        print("from package - kwargs", kwargs)
         response = requests.get(**kwargs)
-        print("GET API CALL -- :", response.status_code)
+        print("from package - GET API CALL -- :", response.status_code)
         response.raise_for_status()
         return response.json()
     except Exception:
@@ -116,7 +116,7 @@ def create_data(**kwargs):
     try:
         kwargs = add_server_url(**kwargs)
         response = requests.post(**kwargs)
-        print("response", response.status_code)
+        print("from package - response", response.status_code)
         response.raise_for_status()
     except Exception:
         raise APICallError(parse_error_message(response), response.status_code)
@@ -125,7 +125,7 @@ def update_data(**kwargs):
     try:
         kwargs = add_server_url(**kwargs)
         response = requests.put(**kwargs)
-        print("response", response.status_code)
+        print("response from package - ", response.status_code)
         response.raise_for_status()
     except Exception:
         raise APICallError(parse_error_message(response), response.status_code)
@@ -134,7 +134,7 @@ def delete_data(**kwargs):
     try:
         kwargs = add_server_url(**kwargs)
         response = requests.delete(**kwargs)
-        print("response", response.status_code)
+        print("response from package - ", response.status_code)
         response.raise_for_status()
     except Exception:
         raise APICallError(parse_error_message(response), response.status_code)
