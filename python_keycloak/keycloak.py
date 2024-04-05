@@ -398,21 +398,22 @@ class KeyCloakUserManagement(Base):
 
     def users_based_on_group(self, group_id):
         response = fetch_data(
-            url = self.URL_GET_USERS_BY_GROUP_ID.format(self.realm_name, group_id),
+            url = self.URL_GET_USERS_BY_GROUP_ID.format(realm_name=self.realm_name, group_id=group_id),
             headers={"Authorization": self.access_token},
         )
         return self.parse_user_details(response) if response else []
 
     def get_groups_realm_roles(self, group_id=None, search=None):
         response = fetch_data(
-            url=self.URL_GET_REALM_ROLE_BY_USERID.format(self.realm_name, group_id, search),
+            url=self.URL_GET_REALM_ROLE_BY_USERID.format(realm_name=self.realm_name, group_id=group_id, search=search),
             headers={"Authorization": self.access_token}
         )
         return response
 
     def assign_realm_role_to_group(self, group_id, client_role_details):
         create_data(
-            url = self.URL_SET_REALM_ROLE_TO_GROUP_BY_GROUP_ID.format(self.realm_name, group_id, client_role_details['clientId']),
+            url = self.URL_SET_REALM_ROLE_TO_GROUP_BY_GROUP_ID.format(realm_name=self.realm_name, 
+                group_id=group_id, client_id=client_role_details['clientId']),
             data=json.dumps([dict(
                 id=client_role_details['id'],
                 name=client_role_details['role'],
