@@ -1,3 +1,4 @@
+import base64
 import requests
 from django.conf import settings
 
@@ -5,17 +6,22 @@ from django.db import transaction
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
-from .keycloak_exceptions import APICallError
+from .exceptions import APICallError
 
 ALLOWED_GROUPS = ['ADMIN']
 User = get_user_model()
+
 
 class KCConstant:
     TOKEN_NOT_FOUND = "Token not found"
     TOKEN_EXPIRED = "Token expired"
     PERMISSION_DENIED = "You dont have enough permission to perform this action"
 
+
 class KeyCloakUrlLibrary:
+
+    URL_CREATE_MASTER_LOGIN = 'realms/master/protocol/openid-connect/token'
+
     URL_CREATE_REALMS = "admin/realms"
     URL_GET_REALMS = "admin/realms"
     URL_GET_REALM_BY_NAME = "admin/realms/{realm_name}"
@@ -51,7 +57,7 @@ class KeyCloakUrlLibrary:
     URL_DELETE_GROUP = "admin/realms/{realm_name}/groups/{group_id}"
     URL_GET_USERS_BY_GROUP_ID = "admin/realms/{realm_name}/groups/{group_id}/members"
     URL_ADD_USER_TO_GROUP = "admin/realms/{realm_name}/users/{user_id}/groups/{group_id}"
-    URL_REMOVE_USER_FROM_GROUP = ""
+    URL_REMOVE_USER_FROM_GROUP = "admin/realms/{realm_name}/users/{user_id}/groups/{group_id}"
     URL_GET_GROUPS_BY_USERID = "admin/realms/{realm_name}/users/{user_id}/groups"
 
     URL_GET_REALM_ROLE_BY_USERID = "admin/realms/{realm_name}/ui-ext/available-roles/groups/{group_id}?search={search}"
@@ -59,6 +65,26 @@ class KeyCloakUrlLibrary:
 
     URL_SET_ACTIVE_DIRECTORY = "admin/realms/{realm_name}/identity-provider/instances"
     URL_GET_ACTIVE_DIRECTORY = "admin/realms/{realm_name}/identity-provider/instances"
+
+
+class Base(KeyCloakUrlLibrary):
+
+    def __init__(self, realm_name=None, access_token=None):
+        self.base_url = settings.KEYCLOAK_SERVER
+        self.realm_name = realm_name
+        self.access_token = access_token
+
+    def get_master_access_token(self):
+        username = "no-reply@solytics-partners.com"
+        password = "admin"
+
+        response = create_data(
+            url=self.URL_CREATE_MASTER_LOGIN,
+            data='grant_type=password&client_id=admin-cli&username=%s&password=%s' % (username, password),
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        self.access_token = response.json()['access_token'] if response.status_code == 200 else None
+        return self.access_token
 
 
 def create_django_user(user_details):
